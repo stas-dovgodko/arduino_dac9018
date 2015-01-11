@@ -2,7 +2,6 @@
 #define outputRelayPin 2 // output switch relay
 #define headphonesPowerRelayPin 3 // output switch relay
 
-
 const int OUTPUT_TO_HP_POWER_DELAY = 1000; // delay to power off or switch output
 
 void setup() {

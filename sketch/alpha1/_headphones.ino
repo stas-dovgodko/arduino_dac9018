@@ -1,99 +1,84 @@
-const byte OUTPUT_TO_HP = 1;
-const byte OUTPUT_TO_AUX = 2;
-unsigned long highMillis[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-unsigned long lowMillis[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-byte headphonesRelayState[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+boolean waitForInit = true;
 
-boolean checkControlPin(int Pin, int headphonesControlThreashold = 2) {
-  
-  
-  int buttonState;
+boolean waitForHPOutput;
+boolean waitForAmpOff;
+unsigned long headphonesTimer;
 
-  buttonState = digitalRead(Pin);
+byte pinAmpPower;
+byte pinOutputSwitcher;
 
-  if (buttonState == HIGH) {
-    unsigned long diff = millis() - highMillis[Pin];
-    if (diff > 100)
-    {
-      highMillis[Pin] = millis();
-      if (headphonesRelayState[Pin] < 255) headphonesRelayState[Pin]++;
-    }
-    
-  }
-  else if (buttonState == LOW) {
-    unsigned long diff = millis() - lowMillis[Pin];
-    if (diff > 100)
-    {
-      lowMillis[Pin] = millis();
-      headphonesRelayState[Pin] = 0;
-    }
-  }
+Bounce headphonesbouncer = Bounce(); 
 
-Serial.println(headphonesRelayState[Pin]);
-  if (headphonesRelayState[Pin] > headphonesControlThreashold) {
-    return true;
-  } else {
-    return false;
-  }
+void setupHeadphones(byte pin) {
+  pinMode(pin, INPUT_PULLUP);
+  headphonesbouncer.attach( pin );
+  headphonesbouncer.interval(50);
 }
 
-// this will check headphones aux pin
-// and control output stereo relays and headphones amp power with delay
-bool checkHeaphones(int pin, int outputPin, int powerPin) {
-  static byte output_mode = OUTPUT_TO_AUX;
-  static bool headphones_power = false;
-  static long headphones_power_init;
-  
-  bool hp_attached = checkControlPin(pin, 4);
+void setupAmp(byte pin) {
+  pinAmpPower = pin;
+  pinMode(pinAmpPower, OUTPUT);
+}
 
-  // check headphones state
-  if (hp_attached) {
-    if (!headphones_power) {
-       headphones_power = true;
-       Serial.println(F("HP: Turn on amp"));
-       headphones_power_init = millis();
+void setupOutputSwitcher(byte pin) {
+  pinOutputSwitcher = pin;
+  pinMode(pinOutputSwitcher, OUTPUT);
+}
+
+void loopHeadphones() {
+  
+  boolean changed = headphonesbouncer.update();
+  
+  byte state = headphonesbouncer.read();
+  
+  if ( waitForInit || changed ) {
+    waitForHPOutput = false;
+    waitForAmpOff = false;
+    if (state == HIGH) {
+      // should power on amp
+      // and schedule switch output to hp
+      turnOnAmp();
+      waitForHPOutput = true;
+    } else {
+      // should switch output to aux
+      // and schedule power off amp
+      setOutputMode(OUTPUT_TO_AUX);
+      waitForAmpOff = true;
     }
-    
-    if (output_mode != OUTPUT_TO_HP) {
-      if (millis() - headphones_power_init > OUTPUT_TO_HP_POWER_DELAY) {
-        output_mode = OUTPUT_TO_HP;
-        Serial.println(F("HP: Set output to HP"));
-      }
-    }
+    headphonesTimer = millis();
+    if (waitForInit) waitForInit = false;
   }
-  else {
-    if (output_mode != OUTPUT_TO_AUX) {
-      output_mode = OUTPUT_TO_AUX;
-      Serial.println(F("HP: Set output to AUX"));
-      headphones_power_init = millis();
-    }
-    
-    if (headphones_power) {
-      if (millis() - headphones_power_init > OUTPUT_TO_HP_POWER_DELAY) {
-        headphones_power = false;
-        Serial.println(F("HP: Turn off amp"));  
+  
+  if ((waitForHPOutput || waitForAmpOff) && millis() - headphonesTimer > OUTPUT_TO_HP_POWER_DELAY) {
+     if (waitForHPOutput) {
+       setOutputMode(OUTPUT_TO_HP);
+       waitForHPOutput = false;
+     } else if (waitForAmpOff) {
+       turnOffAmp();
+       waitForAmpOff = false;
      }
-    }
   }
-  
-
-
-  // check hp power
-  if (headphones_power) {
-    digitalWrite(powerPin, LOW);
-  } else {
-    digitalWrite(powerPin, HIGH);
-  }
-
-  // set output relay
-  if (output_mode == OUTPUT_TO_HP) {
-    
-    digitalWrite(outputPin, LOW);
-  } else if (output_mode == OUTPUT_TO_AUX) {
-    
-    digitalWrite(outputPin, HIGH);
-    
-  }
-  
-  return (output_mode == OUTPUT_TO_HP) && headphones_power;
 }
+
+void turnOnAmp() {
+  Serial.println(F("HP: Turn on amp"));
+  digitalWrite(pinAmpPower, LOW);
+  
+}
+
+void turnOffAmp() {
+  Serial.println(F("HP: Turn off amp"));
+  digitalWrite(pinAmpPower, HIGH);
+}
+
+void setOutputMode(byte mode) {
+  if (mode == OUTPUT_TO_AUX) {
+    Serial.println(F("HP: Set output to AUX"));
+    digitalWrite(pinOutputSwitcher, HIGH);
+  } else if (mode == OUTPUT_TO_HP) {
+    Serial.println(F("HP: Set output to HP"));
+    digitalWrite(pinOutputSwitcher, LOW);
+  }
+}
+
+

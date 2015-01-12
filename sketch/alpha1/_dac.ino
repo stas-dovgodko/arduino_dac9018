@@ -3,9 +3,32 @@ bool sampleDD = true;
 byte  sampleRate = 48;
 byte  sampleBits = 16;
 
-byte filterLed1[16] = {255, 200, 150, 100, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-byte filterLed2[16] = {0, 0, 0, 0, 50, 100, 150, 255, 255, 150, 100, 50, 0, 0, 0, 0};
-byte filterLed3[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 100, 150, 200, 255};
+//byte filterLed1[16] = {0, 200, 255, 200, 150, 100, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+//byte filterLed2[16] = {0, 0, 0, 50, 100, 150, 200, 255, 200, 150, 100, 50, 0, 0, 0, 0};
+//byte filterLed3[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 100, 150, 200, 255};
+
+byte filterLed1[16] = {0, 120, 170, 255, 170, 120, 50,  0,   0,   0,   0,   0,   0,  0,   0,   0};
+byte filterLed2[16] = {0, 0,   0,   0,   0,   0,   50,  120, 170, 255, 170, 120, 50, 0,   0,   0};
+byte filterLed3[16] = {0, 0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   0,   50, 120, 170, 255};
+
+void setupDac() {
+  pinMode(sampleRate44Pin, OUTPUT);
+  pinMode(sampleRate96Pin, OUTPUT);
+  pinMode(sampleRate24bPin, OUTPUT);
+  
+  pinMode(filter1Pin, OUTPUT);
+  pinMode(filter2Pin, OUTPUT);
+  pinMode(filter3Pin, OUTPUT);
+  pinMode(filterUpControl, INPUT_PULLUP);
+  pinMode(filterDownControl, INPUT_PULLUP);
+}
+
+void loopDac() {
+  displaySampleRate(sampleRate44Pin, sampleRate96Pin, sampleRate24bPin);
+  displayFilter(filter1Pin, filter2Pin, filter3Pin);
+  //delay(10);
+}
+
 
 void _blink(int pins[])
 {
@@ -78,14 +101,13 @@ void displayFilter(int pin1, int pin2, int pin3)
 
 int checkFilterControl()
 {
-  
   static unsigned long previousMillisUp = 0;
   static unsigned long previousMillisDown = 0;
   
   int upState = digitalRead(filterUpControl);
   int downState = digitalRead(filterDownControl);
   if (downState == HIGH && upState == LOW) {
-    if (millis() - previousMillisDown > 200)
+    if (millis() - previousMillisDown > 100)
     {
       previousMillisDown = millis();
       if (filterNumber < 15) filterNumber++;
@@ -94,7 +116,7 @@ int checkFilterControl()
     previousMillisDown = millis();
   }
   if (downState == LOW && upState == HIGH) {
-    if (millis() - previousMillisUp > 200)
+    if (millis() - previousMillisUp > 100)
     {
       previousMillisUp = millis();
       if (filterNumber > 0) filterNumber--;
@@ -102,7 +124,7 @@ int checkFilterControl()
   } else {
     previousMillisUp = millis();
   }
-  //Serial.println(filterNumber);
+  
   return filterNumber;
 }
   

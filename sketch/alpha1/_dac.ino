@@ -1,7 +1,11 @@
 bool sampleLocked = true;
 bool sampleDD = true;
-int  sampleRate = 48;
-int  sampleBits = 16;
+byte  sampleRate = 48;
+byte  sampleBits = 16;
+
+byte filterLed1[16] = {255, 200, 150, 100, 50, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+byte filterLed2[16] = {0, 0, 0, 0, 50, 100, 150, 255, 255, 150, 100, 50, 0, 0, 0, 0};
+byte filterLed3[16] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 50, 100, 150, 200, 255};
 
 void _blink(int pins[])
 {
@@ -62,7 +66,45 @@ void displaySampleRate(int pin44, int pin96, int pin24b)
     int pins[] = {pin24b};
     _blink(pins);
   }
-
-
-  //digitalWrite(pin24b, HIGH);
 }
+
+void displayFilter(int pin1, int pin2, int pin3)
+{
+  checkFilterControl();
+  analogWrite(pin1, filterLed1[filterNumber]);
+  analogWrite(pin2, filterLed2[filterNumber]);
+  analogWrite(pin3, filterLed3[filterNumber]);
+}
+
+int checkFilterControl()
+{
+  
+  static unsigned long previousMillisUp = 0;
+  static unsigned long previousMillisDown = 0;
+  
+  int upState = digitalRead(filterUpControl);
+  int downState = digitalRead(filterDownControl);
+  if (downState == HIGH && upState == LOW) {
+    if (millis() - previousMillisDown > 200)
+    {
+      previousMillisDown = millis();
+      if (filterNumber < 15) filterNumber++;
+    }
+  } else {
+    previousMillisDown = millis();
+  }
+  if (downState == LOW && upState == HIGH) {
+    if (millis() - previousMillisUp > 200)
+    {
+      previousMillisUp = millis();
+      if (filterNumber > 0) filterNumber--;
+    }
+  } else {
+    previousMillisUp = millis();
+  }
+  //Serial.println(filterNumber);
+  return filterNumber;
+}
+  
+
+

@@ -62,13 +62,13 @@ void loopHeadphones() {
 
 void turnOnAmp() {
   Serial.println(F("HP: Turn on amp"));
-  digitalWrite(pinAmpPower, HIGH);
-  
+  digitalWrite(pinAmpPower, LOW);
+  Serial.println(F("OK"));
 }
 
 void turnOffAmp() {
   Serial.println(F("HP: Turn off amp"));
-  digitalWrite(pinAmpPower, LOW);
+  digitalWrite(pinAmpPower, HIGH);
 }
 
 void setOutputMode(byte mode) {

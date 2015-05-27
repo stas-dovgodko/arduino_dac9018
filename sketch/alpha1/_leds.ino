@@ -10,6 +10,13 @@ void leds_setup() {
     pinMode(pin, OUTPUT);
     digitalWrite(pin, LOW);
   }
+  
+  for (int i = 0; i < 12; i++) {
+    byte pin = leds[i];
+    digitalWrite(pin, HIGH);
+  }
+
+//delay(100000);
 
   for (int i = 0; i < 12; i++) {
     byte pin = leds[i];
@@ -102,7 +109,7 @@ void leds_displayFilter(byte value) {
   }
 }
 
-void leds_displayDpll(byte value) {
+void leds_displayDpll(byte value, boolean dpll_off) {
   
   Serial.println(value);
   

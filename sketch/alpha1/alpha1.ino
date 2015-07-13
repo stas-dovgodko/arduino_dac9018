@@ -7,32 +7,30 @@ Bounce qt_bouncer = Bounce();
 Bounce flt_bouncer = Bounce();
 Bounce dpll_bouncer = Bounce();
 
-unsigned long flt_bouncer_press_timestamp;
 
 
-#define headphonesControlPin A3 // headphones pin (should be open for connected HPs )
-#define outputRelayPin A1 // output switch relay
+#define headphonesControlPin A1 // headphones pin (should be open for connected HPs )
+#define outputRelayPin A3 // output switch relay
 #define headphonesPowerRelayPin A2 // output switch relay
 
-#define DEBUG
+//#define DEBUG
+//#define RESET
+#define USE100MHZ
 
-
-#define pin_fs44 2 // !
-#define pin_fs96 3 // !
-
-#define pin_fs192 4 // !
-
+#define pin_fltFast 2 // !
+#define pin_fs44 7 // !
+#define pin_DpllLow 3 // !
+#define pin_fs192 9 // !
+#define pin_fltSlow 4 // !
+#define pin_fs96 8 // !
 #define pin_qt7 5 // !
 #define pin_qt9 6 // !
-#define pin_fltFast 7 // !
-#define pin_fltSlow 8 // !
+#define pin_DpllMidH 10 // !
+#define pin_DpllOff 11 // !
+#define pin_DpllMid 12 // !
+#define pin_DpllHigh 13 // !
 
-#define pin_DpllLow 9 // !
-#define pin_DpllMid 10 // !
-#define pin_DpllMidH 11 // !
-#define pin_DpllHigh 12 // !
 
-#define pin_DpllOff 13 // !
 
 #define sw_qt 1
 #define sw_flt 0
@@ -52,122 +50,80 @@ byte output_mode = OUTPUT_TO_AUX;
 bool headphones_power = false;
 
 
+boolean status_isdsd = false;
+boolean status_islock = false;
+boolean status_changed = false;
+unsigned long status_sr = 0;
+byte status_sr_idx = 0;
+
 
 void setup() {
-  //Serial.end();
 
-
-
-  
-  
-  #ifdef DEBUG
+#ifdef DEBUG
   Serial.begin(9600);
   Serial.println(F("BOOT"));
-  #endif DEBUG
+#else
+  Serial.end();
+#endif DEBUG
 
-  dac_setup();
+  s_setup();
+  //dac_setup();
   leds_setup();
 
   setupAmp(headphonesPowerRelayPin);
   setupOutputSwitcher(outputRelayPin);
   setupHeadphones(headphonesControlPin);
-  
+
+
+
+
 }
-byte dpll = 0;
-bool dpll_off = false;
-bool pressed_long = false;
+
+byte filter;
+byte dpll;
+byte qt;
 
 void loop() {
-  byte chipStatus = 0;
-  unsigned long sr = 0;
-  loopHeadphones();
 
-  chipStatus = readRegister(27); // Read status register
-  if (chipStatus & B00000001) { // There is a lock in a signal
-    sr = sampleRate();         // Get the sample rate from register
-    leds_displaySampleRate(sr);
-  } else {
-    leds_displaySampleRate(0);
+  s_loop();
+  
+  if (dpll_bouncer.update() && dpll_bouncer.read() == HIGH) {
+    
+      if (++dpll > 5) dpll = 0;
+      s_setDPLLFilterNumber(dpll);
   }
   
-
-  byte qt = dac_getQuantizer();
-  leds_displayQt(qt);
-
-
   if (qt_bouncer.update() && qt_bouncer.read() == HIGH) {
-    qt++; if (qt > 9) qt = 6;
-    dac_setQuantizer(qt);
-    Serial.println("QT + ");
+      if (++qt > 9) qt = 6;
+      s_setQuantizer(qt);
   }
-
-
-
-  byte filter = min(dac_getIirFilter(), dac_getFirFilter());
-  leds_displayFilter(filter);
-
+  
   if (flt_bouncer.update() && flt_bouncer.read() == HIGH) {
 
-    Serial.print("IIR:");
-    Serial.println(dac_getIirFilter());
-    Serial.print("FIR:");
-    Serial.println(dac_getFirFilter());
+      if (++filter > 2) filter = (status_sr > 352000) ? 0 : 1; // bypass oversample works only for UH rates
 
-    filter++; if (filter > 2) filter = 0;
-    Serial.print("NEW:");
-    Serial.println(filter);
-    dac_setIirFilter(filter);
-    dac_setFirFilter(filter);
-    DumpSabreRegisters();
-  }
-
-
-
-  unsigned long press_interval;
-
-
-
-  if (dpll_bouncer.update()) {
-    if ( dpll_bouncer.fell()  ) {
-
-
-      flt_bouncer_press_timestamp = millis();
-
-    }
-    if (dpll_bouncer.read() == HIGH) {
-
-      press_interval = millis() - flt_bouncer_press_timestamp;
-
-      if (press_interval < 1000) { // long press
-        Serial.print("SHORT");
-        if (!pressed_long) {
-          dpll_off = false;
-          dpll++;
-          if (dpll > 4) dpll = 0;
-          dac_setDPLL(dpll, dpll_off);
-          leds_displayDpll(dpll, dpll_off);
-        } else {
-          pressed_long = false;
-        }
+      if (status_isdsd) {
+        s_setIirFilter(filter);
+        s_setFirFilter(1); // slow (?)
       } else {
+        s_setIirFilter(0); // 47
+        s_setFirFilter(filter);
       }
-    }
-  } else if (dpll_bouncer.read() == LOW) {
-    press_interval = millis() - flt_bouncer_press_timestamp;
-    if (press_interval > 1000) {
-      Serial.print("LONG");
-      flt_bouncer_press_timestamp = millis();
-      press_interval = 0;
-      pressed_long = true;
-      dpll_off = !dpll_off;
-
-      dac_setDPLL(dpll, dpll_off);
-      leds_displayDpll(dpll, dpll_off);
-
-    }
   }
-
-
+  
+  leds_displayFilter(filter);
+  leds_displayDpll(dpll);
+  leds_displayQt(qt);
+  
+  if (status_islock) {
+    if (status_isdsd) {
+        leds_displayDSD();
+    } else {
+      leds_displaySampleRate(status_sr);
+    }
+  } else {
+    leds_displayLostLock();
+  }
+  
+  loopHeadphones();
 }
-
-

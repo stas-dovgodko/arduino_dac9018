@@ -1,19 +1,25 @@
 
 
+byte leds[12] = {pin_fs44, pin_fs96, pin_fs192, pin_qt7, pin_qt9, pin_fltFast, pin_fltSlow,  pin_DpllLow, pin_DpllMid, pin_DpllMidH, pin_DpllHigh,  pin_DpllOff};
 
-
-void leds_setup() {
-  byte leds[12] = {pin_fs44, pin_fs96, pin_fs192, pin_qt7, pin_qt9, pin_fltFast, pin_fltSlow,  pin_DpllLow, pin_DpllMid, pin_DpllMidH, pin_DpllHigh,  pin_DpllOff};
-
+void leds_off() {
   for (int i = 0; i < 12; i++) {
     byte pin = leds[i];
     pinMode(pin, OUTPUT);
     digitalWrite(pin, LOW);
   }
+}
+
+void leds_setup() {
+  
+
+  leds_off();
+  
   
   for (int i = 0; i < 12; i++) {
     byte pin = leds[i];
     digitalWrite(pin, HIGH);
+    delay(100);
   }
 
 //delay(100000);
@@ -38,6 +44,18 @@ void leds_setup() {
   dpll_bouncer.interval(50);
 }
 
+void leds_displayLostLock() {
+    digitalWrite(pin_fs44, LOW);
+    digitalWrite(pin_fs96, LOW);
+    digitalWrite(pin_fs192, LOW);
+}
+
+void leds_displayDSD() {
+    digitalWrite(pin_fs44, HIGH);
+    digitalWrite(pin_fs96, HIGH);
+    digitalWrite(pin_fs192, HIGH);
+}
+
 void leds_displaySampleRate(unsigned long sr) {
   if (sr <= 0) {
     digitalWrite(pin_fs44, LOW);
@@ -58,15 +76,10 @@ void leds_displaySampleRate(unsigned long sr) {
     digitalWrite(pin_fs44, LOW);
     digitalWrite(pin_fs96, HIGH);
     digitalWrite(pin_fs192, LOW);
-  } else if (sr <= 400000) {
-    // 192
+  } else {
+    // 192+
     digitalWrite(pin_fs44, LOW);
     digitalWrite(pin_fs96, LOW);
-    digitalWrite(pin_fs192, HIGH);
-  } else {
-    // DSD
-    digitalWrite(pin_fs44, HIGH);
-    digitalWrite(pin_fs96, HIGH);
     digitalWrite(pin_fs192, HIGH);
   }
 }
@@ -109,10 +122,9 @@ void leds_displayFilter(byte value) {
   }
 }
 
-void leds_displayDpll(byte value, boolean dpll_off) {
+void leds_displayDpll(byte value) {
   
-  Serial.println(value);
-  
+
   if (value == 0) { // default
     digitalWrite(pin_DpllLow, LOW);
     digitalWrite(pin_DpllMid, LOW);
@@ -143,20 +155,11 @@ void leds_displayDpll(byte value, boolean dpll_off) {
     digitalWrite(pin_DpllMidH, LOW);
     digitalWrite(pin_DpllHigh, HIGH);
     digitalWrite(pin_DpllOff, LOW);
-  } else if (value == 10) {
+  } else if (value == 5) {
     digitalWrite(pin_DpllLow, LOW);
     digitalWrite(pin_DpllMid, LOW);
     digitalWrite(pin_DpllMidH, LOW);
     digitalWrite(pin_DpllHigh, LOW);
     digitalWrite(pin_DpllOff, HIGH);
   }
-}
-
-void leds_loop() {
-
-  //boolean changed = headphonesbouncer.update();
-
-  //byte state = headphonesbouncer.read();
-
-
 }

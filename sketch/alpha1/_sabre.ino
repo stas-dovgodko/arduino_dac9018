@@ -178,7 +178,7 @@ void s_setup() {
   _s_settings[0][20] = B11111111; // MT
   _s_settings[0][21] = B11111111; // MT
   _s_settings[0][22] = B11111111; // MT
-  _s_settings[0][23] = B00111111; // MT
+  _s_settings[0][23] = B11111111; // MT
 }
 
 void s_mute() {
@@ -404,34 +404,35 @@ boolean s_setQuantizer(byte value)
   Serial.println(value);
 #endif DEBUG
 
+  boolean changed = false;
+
   switch (value)
   {
     case 6:
       bitSet(reg14, 3);     // True diff
       reg15 = B0;           // 6-bit quantizer
-      //dac_mastertrim(0);
+      changed |= s_setMastertrim(0);
       break;
 
     case 7:
       bitSet(reg14, 3);     // True diff
       reg15 = B1010101;     // 7-bit quantizer
-      //dac_mastertrim(0);
+      changed |= s_setMastertrim(0);
       break;
 
     case 8:
       bitSet(reg14, 3);     // True diff
       reg15 = B10101010;    // 8-bit quantizer
-      //dac_mastertrim(6);
+      changed |= s_setMastertrim(60); // -6db
       break;
 
     case 9:
       bitClear(reg14, 3);   // Pseudo diff
       reg15 = B11111111;    // 9-bit quantizer
-      //dac_mastertrim(6);
+      changed |= s_setMastertrim(60);   // -6db
       break;
   }
     
-  boolean changed = false;
   changed |= s_put(14, reg14);
   changed |= s_put(15, reg15);
   
@@ -440,7 +441,6 @@ boolean s_setQuantizer(byte value)
   }
   
   return changed;
-  
 }
 
 
@@ -643,6 +643,24 @@ byte s_getFirFilter()
 }
 
 
+boolean s_setMastertrim(int decDb)
+{
+    decDb = constrain(decDb, 0, 120);
+
+    byte reg23 = mtrim[decDb][0];
+    byte reg22 = mtrim[decDb][1];
+    byte reg21 = mtrim[decDb][2];
+    byte reg20 = mtrim[decDb][3];
+
+    boolean changed = false;
+    changed |= s_put(23, reg23);
+    changed |= s_put(22, reg22);
+    changed |= s_put(21, reg21);
+    changed |= s_put(20, reg20);
+
+    return changed;
+}
+
 // -----------------------------------
 
 void s_loop() {
@@ -713,8 +731,19 @@ void s_changed() {
 
 
   dpll = s_getDPLLFilterNumber();
+
+  s_setDPLLFilterNumber(dpll);
+
   qt = s_getQuantizer();
-  filter = status_isdsd ? s_getIirFilter() : s_getFirFilter();
+  s_setQuantizer(qt); //  to reinit all
+
+  if (status_isdsd) {
+     filter = s_getIirFilter();
+     s_setIirFilter(filter);
+  } else {
+     filter = s_getFirFilter();
+     s_setFirFilter(filter);
+  }
 }
 
 byte _s_sample_rate_idx() {

@@ -66,8 +66,8 @@ void setup() {
   Serial.end();
 #endif DEBUG
 
+
   s_setup();
-  //dac_setup();
   leds_setup();
 
   setupAmp(headphonesPowerRelayPin);

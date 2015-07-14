@@ -34,7 +34,7 @@ function convBase($numberInput, $fromBaseInput, $toBaseInput)
 
 $v_x = "1073741823";
 
-$v1 = "4294967295"; $b = 0;
+$v1 = "2147483647"; $b = 0;
 
 $def = [];
 
@@ -45,8 +45,8 @@ for ($l = 0; $l <= 12; $l+=0.1) {
 
     //if ($l > 0) {
 
-        //$n = pow(1.122, $l);
-        $n = pow(1.26, $l);
+        $n = pow(1.122, $l);
+        //$n = pow(1.26, $l);
 
         $v2 = bcdiv($v1, $n, 8);
 
@@ -63,11 +63,13 @@ for ($l = 0; $l <= 12; $l+=0.1) {
 
         $def_bytes = [];
         foreach($bytes as $i => $byte) {
-            $b++;
 
+            //$def_bytes[] = sprintf('mtrim[%d][%d] = B%s;',$index,$i,$byte);
             $def_bytes[] = 'B'.$byte;
         }
-        $def[] = sprintf('mtrim[%d] = {%s}; // -%.2fdb (%s times)',$index++, implode(', ', $def_bytes), $l, bcdiv($v1, $v2, 3));
+        $index++;
+        //$def[] = sprintf('%s // -%.2fdb (%s times)',implode(' ', $def_bytes), $l, bcdiv($v1, $v2, 3));
+        $def[] = sprintf('  {%s}, // -%.2fdb (%s times)',implode(',', $def_bytes), $l, bcdiv($v1, $v2, 3));
 
         //echo "\n";
 
@@ -77,7 +79,8 @@ for ($l = 0; $l <= 12; $l+=0.1) {
     //}
 }
 
-echo 'bytes: '.$b."\n";
-echo '----------------'."\n";
-echo 'byte mtrim[120][4];'."\n";
+//echo 'bytes: '.$b."\n";
+//echo '----------------'."\n";
+echo 'const PROGMEM  byte mastertrim[120][4] = {'."\n";
 echo implode("\n", $def);
+echo '}'."\n";

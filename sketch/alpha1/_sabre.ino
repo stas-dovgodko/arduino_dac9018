@@ -144,7 +144,7 @@ void s_setup() {
       EEPROM.write((i * 100) + r * 2, 0);
     }
   }
-#endif DEBUG
+#endif RESET
   
   
   for (int r = 0; r < 27; r++) {

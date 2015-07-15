@@ -38,15 +38,14 @@ Bounce dpll_bouncer = Bounce();
 
 String pinPrefix = "#";
 
-
 const int OUTPUT_TO_HP_POWER_DELAY = 1000; // delay to power off or switch output
-const int LED_BLINK_INTERVAL = 1000; // blick interval
+
 
 const byte OUTPUT_TO_HP = 1;
 const byte OUTPUT_TO_AUX = 2;
 
-byte filterNumber = 0;
 byte output_mode = OUTPUT_TO_AUX;
+
 bool headphones_power = false;
 
 
@@ -56,6 +55,9 @@ boolean status_changed = false;
 unsigned long status_sr = 0;
 byte status_sr_idx = 0;
 
+byte filter;
+byte dpll;
+byte qt;
 
 void setup() {
 
@@ -79,9 +81,7 @@ void setup() {
 
 }
 
-byte filter;
-byte dpll;
-byte qt;
+
 
 void loop() {
 

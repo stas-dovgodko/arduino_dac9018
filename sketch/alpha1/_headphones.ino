@@ -93,14 +93,14 @@ void setOutputMode(byte mode) {
     Serial.println(F("HP: Set output to AUX"));
     #endif DEBUG
     
-    digitalWrite(pinOutputSwitcher, HIGH);
+    digitalWrite(pinOutputSwitcher, LOW);
   } else if (mode == OUTPUT_TO_HP) {
     
     #ifdef DEBUG
     Serial.println(F("HP: Set output to HP"));
     #endif DEBUG
     
-    digitalWrite(pinOutputSwitcher, LOW);
+    digitalWrite(pinOutputSwitcher, HIGH);
   }
 }
 

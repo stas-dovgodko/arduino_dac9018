@@ -1,6 +1,6 @@
 
 
-byte leds[12] = {pin_fs44, pin_fs96, pin_fs192, pin_qt7, pin_qt9, pin_fltFast, pin_fltSlow,  pin_DpllLow, pin_DpllMid, pin_DpllMidH, pin_DpllHigh,  pin_DpllOff};
+const byte leds[12] = {pin_fs44, pin_fs96, pin_fs192, pin_qt7, pin_qt9, pin_fltFast, pin_fltSlow,  pin_DpllLow, pin_DpllMid, pin_DpllMidH, pin_DpllHigh,  pin_DpllOff};
 
 void leds_off() {
   for (int i = 0; i < 12; i++) {
@@ -11,18 +11,18 @@ void leds_off() {
 }
 
 void leds_setup() {
-  
+
 
   leds_off();
-  
-  
+
+
   for (int i = 0; i < 12; i++) {
     byte pin = leds[i];
     digitalWrite(pin, HIGH);
     delay(100);
   }
 
-//delay(100000);
+  //delay(100000);
 
   for (int i = 0; i < 12; i++) {
     byte pin = leds[i];
@@ -45,15 +45,15 @@ void leds_setup() {
 }
 
 void leds_displayLostLock() {
-    digitalWrite(pin_fs44, LOW);
-    digitalWrite(pin_fs96, LOW);
-    digitalWrite(pin_fs192, LOW);
+  digitalWrite(pin_fs44, LOW);
+  digitalWrite(pin_fs96, LOW);
+  digitalWrite(pin_fs192, LOW);
 }
 
 void leds_displayDSD() {
-    digitalWrite(pin_fs44, HIGH);
-    digitalWrite(pin_fs96, HIGH);
-    digitalWrite(pin_fs192, HIGH);
+  digitalWrite(pin_fs44, HIGH);
+  digitalWrite(pin_fs96, HIGH);
+  digitalWrite(pin_fs192, HIGH);
 }
 
 void leds_displaySampleRate(unsigned long sr) {
@@ -123,7 +123,7 @@ void leds_displayFilter(byte value) {
 }
 
 void leds_displayDpll(byte value) {
-  
+
 
   if (value == 0) { // default
     digitalWrite(pin_DpllLow, LOW);
